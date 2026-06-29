@@ -13,7 +13,7 @@ The first feature is tmux-style navigation between Neovim windows and Herdr pane
 
 Herdr does not currently expose tmux-style process-aware key forwarding. `herdr.nvim` works around that with two pieces:
 
-1. The Neovim plugin writes a per-pane marker file under `~/.cache/herdr.nvim/panes/` while Neovim is open. This is a plain empty file named after the Herdr pane ID — no JSON, no shared state, no races.
+1. The Neovim plugin writes a per-pane marker file under `~/.cache/herdr.nvim/sessions/<socket-hash>/panes/` while Neovim is open. This is a plain empty file named after the Herdr pane ID — no JSON, no shared state, no races.
 2. The Rust `herdr-navigator` helper is bound in Herdr. When `Ctrl+h/j/k/l` is pressed:
    - if the active pane has a marker file, it forwards the key into Neovim;
    - otherwise it moves focus to the adjacent Herdr pane.
@@ -22,7 +22,7 @@ When Neovim receives the key, it first moves between Neovim windows. If there is
 
 The helper forwards control keys with Herdr's raw `pane.send_text` API. This avoids bracketed paste, which would make Neovim try to insert text into buffers like `NvimTree`.
 
-The helper can also own split bindings and keeps a short live layout cache under `~/.cache/herdr.nvim/`. This avoids waiting for Herdr's debounced `session.json` save before pane navigation knows about a new split.
+The helper can also own split bindings and keeps a short live layout cache under `~/.cache/herdr.nvim/sessions/<socket-hash>/`. This avoids waiting for Herdr's debounced `session.json` save before pane navigation knows about a new split.
 
 Stale marker files (from crashed Neovim instances) are pruned automatically by checking against Herdr's live `pane.list` at dispatch time.
 

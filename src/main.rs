@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, Write};
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -65,18 +66,29 @@ fn socket_path() -> Result<PathBuf, String> {
     Ok(home.join(".config").join("herdr").join("herdr.sock"))
 }
 
-fn cache_path() -> Result<PathBuf, String> {
+fn stable_hash(bytes: &[u8]) -> String {
+    let mut hash = 5381_u32;
+    for byte in bytes {
+        hash = hash.wrapping_mul(33).wrapping_add(u32::from(*byte));
+    }
+    format!("{hash:08x}")
+}
+
+fn session_cache_dir() -> Result<PathBuf, String> {
     let base = env::var_os("XDG_CACHE_HOME")
         .map(PathBuf::from)
         .unwrap_or(home_dir()?.join(".cache"));
-    Ok(base.join("herdr.nvim").join("layout-cache.json"))
+    let socket = socket_path()?;
+    let hash = stable_hash(socket.as_os_str().as_bytes());
+    Ok(base.join("herdr.nvim").join("sessions").join(hash))
+}
+
+fn cache_path() -> Result<PathBuf, String> {
+    Ok(session_cache_dir()?.join("layout-cache.json"))
 }
 
 fn nvim_panes_dir() -> Result<PathBuf, String> {
-    let base = env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .unwrap_or(home_dir()?.join(".cache"));
-    Ok(base.join("herdr.nvim").join("panes"))
+    Ok(session_cache_dir()?.join("panes"))
 }
 
 fn load_cache() -> LayoutCache {

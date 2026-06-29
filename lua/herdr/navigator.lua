@@ -107,9 +107,34 @@ local function pane_id()
 	return vim.env.HERDR_ACTIVE_PANE_ID or vim.env.HERDR_PANE_ID
 end
 
-local function nvim_panes_dir()
+local function socket_path()
+	if vim.env.HERDR_SOCKET_PATH and vim.env.HERDR_SOCKET_PATH ~= "" then
+		return vim.env.HERDR_SOCKET_PATH
+	end
+
+	local home = vim.env.HOME
+	if vim.env.HERDR_SESSION and vim.env.HERDR_SESSION ~= "" then
+		return home .. "/.config/herdr/sessions/" .. vim.env.HERDR_SESSION .. "/herdr.sock"
+	end
+
+	return home .. "/.config/herdr/herdr.sock"
+end
+
+local function stable_hash(value)
+	local hash = 5381
+	for i = 1, #value do
+		hash = (hash * 33 + value:byte(i)) % 4294967296
+	end
+	return string.format("%08x", hash)
+end
+
+local function session_cache_dir()
 	local base = vim.env.XDG_CACHE_HOME or (vim.env.HOME .. "/.cache")
-	return base .. "/herdr.nvim/panes"
+	return base .. "/herdr.nvim/sessions/" .. stable_hash(socket_path())
+end
+
+local function nvim_panes_dir()
+	return session_cache_dir() .. "/panes"
 end
 
 function M.register()

@@ -7,7 +7,7 @@ Allows seamless tmux-style window navigation between Neovim windows and Herdr pa
 
 ## Stack & Architecture
 - **Rust helper (`herdr-navigator`)**: A standalone Rust binary compiled from `src/main.rs`. Implements CLI commands (`register`, `release`, `focus`, `split`, `dispatch`) to query and dispatch navigation to Herdr panes.
-- **Neovim Plugin**: Written in Lua, located in `lua/herdr/` and `plugin/`. It manages Neovim window movement, writes per-pane marker files to `~/.cache/herdr.nvim/panes/` (using autocommands), and defers to the Rust helper if Neovim cannot navigate inside itself.
+- **Neovim Plugin**: Written in Lua, located in `lua/herdr/` and `plugin/`. It manages Neovim window movement, writes per-pane marker files to `~/.cache/herdr.nvim/sessions/<socket-hash>/panes/` (using autocommands), and defers to the Rust helper if Neovim cannot navigate inside itself.
 
 ## Setup, Build & Run Commands
 - Build Rust helper: `cargo build --release`
@@ -38,7 +38,7 @@ Allows seamless tmux-style window navigation between Neovim windows and Herdr pa
   ```
 
 ## Project Conventions & Quirks
-- Neovim pane detection uses per-pane marker files (`~/.cache/herdr.nvim/panes/{pane_id}`), not Herdr's agent API. Stale markers are pruned against Herdr's live `pane.list` at dispatch time.
+- Neovim pane detection uses per-pane marker files (`~/.cache/herdr.nvim/sessions/<socket-hash>/panes/{pane_id}`), not Herdr's agent API. Stale markers are pruned against Herdr's live `pane.list` at dispatch time.
 - The helper leverages Herdr's agent focus API internally as a temporary focus shim (since Herdr has no direct `pane.focus` API), then releases that marker immediately.
-- The helper stores layouts and registers in local `~/.cache/herdr.nvim/` cache to avoid waiting for Herdr's debounced JSON saves.
+- The helper stores layouts and registers in local `~/.cache/herdr.nvim/sessions/<socket-hash>/` cache to avoid waiting for Herdr's debounced JSON saves.
 - Prevent bracketed paste issue by utilizing `pane.send_text` in the helper.
